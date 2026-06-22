@@ -129,6 +129,30 @@ function showFriendAdd(profile: { displayName: string; pictureUrl?: string }) {
     try {
       const { friendFlag } = await liff.getFriendship();
       if (!friendFlag) return;
+      // 友だち追加が確認できたので、アトリビューションを紐づけるために /api/liff/link を再送
+      try {
+        const fp = await liff.getProfile();
+        const idToken = liff.getIDToken();
+        const params = new URLSearchParams(window.location.search);
+        const existingUuid = getSavedUuid();
+        await apiCall('/api/liff/link', {
+          method: 'POST',
+          body: JSON.stringify({
+            idToken: idToken || '',
+            displayName: fp.displayName,
+            existingUuid: existingUuid,
+            ref: params.get('ref') || undefined,
+            ig: params.get('ig') || undefined,
+          }),
+        }).then(async (res) => {
+          if (res.ok) {
+            const data = await res.json() as { success: boolean; data?: { userId?: string } };
+            if (data?.data?.userId) {
+              saveUuid(data.data.userId);
+            }
+          }
+        });
+      } catch { /* best-effort */ }
 
       // Send form link if form param exists (was lost during friend-add flow)
       const formParam = new URLSearchParams(window.location.search).get('form');
@@ -455,7 +479,7 @@ async function main() {
     await liff.init({ liffId: LIFF_ID });
 
     if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: window.location.href });
+      liff.login();
       return;
     }
 

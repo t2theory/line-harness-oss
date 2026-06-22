@@ -5,10 +5,12 @@ import Event from './pages/Event.js';
 import EventConfirm from './pages/EventConfirm.js';
 import EventDone from './pages/EventDone.js';
 import EventBookings from './pages/EventBookings.js';
+import DiagRedirect from './pages/DiagRedirect.js';
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/diag-redirect" element={<DiagRedirect />} />
       <Route path="/booking" element={<Booking />} />
       <Route path="/booking/history" element={<BookingHistory />} />
       <Route path="/events/me" element={<EventBookings />} />

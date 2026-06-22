@@ -1,6 +1,7 @@
 name = "line-harness"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
+
 # nodejs_compat is required by @line-harness/update-engine which pulls in
 # `node:stream` (Readable.fromWeb), `node:zlib` (createGunzip), `node:crypto`
 # (createHash), and the `tar-stream` package for bundle parsing during the
@@ -13,7 +14,7 @@ workers_dev = true
 # デフォルト = テスト環境 (noda@)
 # 使い方: npx wrangler deploy
 # ═══════════════════════════════════════════════════════════════
-account_id = "YOUR_DEV_ACCOUNT_ID"
+account_id = "aee83225e74e3c5155d60601bd27e875"
 
 [assets]
 directory = "dist/client"
@@ -22,7 +23,8 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "line-harness"
-database_id = "YOUR_DEV_D1_DATABASE_ID"
+database_id = "eb4652ad-cd08-4992-a494-77c451b8a713"
+migrations_dir = "../../packages/db/migrations"
 
 [[r2_buckets]]
 binding = "IMAGES"
@@ -40,12 +42,15 @@ crons = ["*/5 * * * *", "0 */6 * * *"]
 WORKER_NAME = "line-harness"
 ADMIN_PAGES_PROJECT = "line-harness-admin"
 LIFF_PAGES_PROJECT = "line-harness-liff"
-D1_DATABASE_ID = "YOUR_DEV_D1_DATABASE_ID"
+D1_DATABASE_ID = "eb4652ad-cd08-4992-a494-77c451b8a713"
 MANIFEST_URL = "https://github.com/Shudesu/line-harness-oss/releases/latest/download/release-manifest.json"
-WORKER_PUBLIC_URL = "https://line-harness.workers.dev"
-ADMIN_PUBLIC_URL = "https://line-harness-admin.pages.dev"
-LIFF_PUBLIC_URL = "https://line-harness-liff.pages.dev"
+WORKER_PUBLIC_URL = "https://line-harness.t2theory.workers.dev"
+ADMIN_PUBLIC_URL = "https://line-harness-admin-8j4.pages.dev"
+LIFF_PUBLIC_URL = "https://line-harness-liff-42f.pages.dev"
 CF_ACCOUNT_ID = "YOUR_DEV_ACCOUNT_ID"
+ADMIN_ORIGIN = "https://line-harness-admin-8j4.pages.dev,https://line-harness-liff-42f.pages.dev,https://loopheart.jp"
+ADMIN_ALLOW_CROSS_SITE = "true"
+WORKER_URL = "https://line-harness.t2theory.workers.dev"
 
 # ═══════════════════════════════════════════════════════════════
 # 本番環境
@@ -53,7 +58,7 @@ CF_ACCOUNT_ID = "YOUR_DEV_ACCOUNT_ID"
 # D1:     npx wrangler d1 execute line-crm --env production --remote --file ...
 # ═══════════════════════════════════════════════════════════════
 [env.production]
-account_id = "YOUR_ACCOUNT_ID"
+account_id = "aee83225e74e3c5155d60601bd27e875"
 
 [env.production.assets]
 directory = "dist/client"
@@ -62,7 +67,7 @@ binding = "ASSETS"
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "line-crm"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "eb4652ad-cd08-4992-a494-77c451b8a713"
 
 [[env.production.r2_buckets]]
 binding = "IMAGES"
@@ -78,7 +83,7 @@ crons = ["*/5 * * * *", "0 */6 * * *"]
 WORKER_NAME = "your-worker-name"
 ADMIN_PAGES_PROJECT = "line-harness-admin"
 LIFF_PAGES_PROJECT = "line-harness-liff"
-D1_DATABASE_ID = "YOUR_D1_DATABASE_ID"
+D1_DATABASE_ID = "eb4652ad-cd08-4992-a494-77c451b8a713"
 MANIFEST_URL = "https://github.com/Shudesu/line-harness-oss/releases/latest/download/release-manifest.json"
 WORKER_PUBLIC_URL = "https://your-worker-name.workers.dev"
 ADMIN_PUBLIC_URL = "https://line-harness-admin.pages.dev"
