@@ -1,5 +1,11 @@
-import { describe, expect, test } from 'vitest';
-import { renderNotificationText } from './booking-notifier.js';
+import { describe, expect, test, vi } from 'vitest';
+import {
+  SQUARE_PAYMENT_URL,
+  renderAdminBookingRequestText,
+  renderNotificationText,
+  sendAdminBookingRequestNotification,
+} from './booking-notifier.js';
+import type { LineClient } from '@line-crm/line-sdk';
 
 const ctx = {
   menuName: 'カット',
@@ -16,6 +22,7 @@ describe('renderNotificationText', () => {
     expect(text).toContain('山田');
     expect(text).toContain('2026-05-10 14:00');
     expect(text).toContain('お店からの返信をお待ちください');
+    expect(text).toContain(SQUARE_PAYMENT_URL);
   });
   test('承認', () => {
     const text = renderNotificationText('approved', ctx);
@@ -34,5 +41,48 @@ describe('renderNotificationText', () => {
   test('当日 N 時間前', () => {
     const t = renderNotificationText('hours_before', ctx);
     expect(t).toContain('本日のご予約まであと 2 時間');
+  });
+});
+
+describe('admin booking request notification', () => {
+  test('renders booking request details for admin', () => {
+    const text = renderAdminBookingRequestText({
+      ...ctx,
+      friendName: '佐藤 花子',
+      friendId: 'friend-1',
+      lineUserId: 'U123',
+      bookingId: 'booking-1',
+      customerNote: '夜なら助かります',
+    });
+
+    expect(text).toContain('新しい予約リクエスト');
+    expect(text).toContain('佐藤 花子');
+    expect(text).toContain('booking-1');
+    expect(text).toContain('夜なら助かります');
+    expect(text).toContain(SQUARE_PAYMENT_URL);
+  });
+
+  test('sends admin booking request notification to configured LINE users', async () => {
+    const pushMessage = vi.fn().mockResolvedValue({});
+    const lineClient = { pushMessage } as unknown as LineClient;
+
+    const sent = await sendAdminBookingRequestNotification(
+      { ADMIN_LINE_USER_ID: 'UADMIN1, UADMIN2' },
+      lineClient,
+      {
+        ...ctx,
+        friendName: '佐藤 花子',
+        friendId: 'friend-1',
+        lineUserId: 'U123',
+        bookingId: 'booking-1',
+        customerNote: null,
+      },
+    );
+
+    expect(sent).toBe(true);
+    expect(pushMessage).toHaveBeenCalledTimes(2);
+    expect(pushMessage).toHaveBeenCalledWith('UADMIN1', [
+      { type: 'text', text: expect.stringContaining('新しい予約リクエスト') },
+    ]);
   });
 });

@@ -74,19 +74,7 @@ export function UpdateBanner() {
   }
 
   if (status.kind === 'fork') {
-    return (
-      <div className="bg-amber-100 text-amber-900 px-4 py-2 border-b text-sm">
-        改造を検知しました (v{status.version}, {status.reason}).{' '}
-        <a
-          className="underline"
-          href="https://theharness.com/wiki/updates/manual"
-          target="_blank"
-          rel="noreferrer"
-        >
-          手動更新ガイド →
-        </a>
-      </div>
-    )
+    return null
   }
 
   return (

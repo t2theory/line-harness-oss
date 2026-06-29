@@ -12,6 +12,7 @@
 
 import { Hono, type Context } from 'hono';
 import { getLineAccounts } from '@line-crm/db';
+import { LineClient } from '@line-crm/line-sdk';
 import type { Env } from '../index.js';
 import { canTransition, nextStatus, type BookingAction } from '../services/booking-state.js';
 import { computeSlots, getAvailability } from '../services/availability.js';
@@ -19,7 +20,7 @@ import {
   findIdempotencyResponse,
   saveIdempotencyResponse,
 } from '../services/booking-idempotency.js';
-import { sendBookingNotification } from '../services/booking-notifier.js';
+import { sendAdminBookingRequestNotification, sendBookingNotification } from '../services/booking-notifier.js';
 import {
   DEFAULT_ACCOUNT_SETTINGS,
   IDEMPOTENCY_TTL_MINUTES,
@@ -160,13 +161,18 @@ async function notifyForBooking(
   db: D1Database,
   bookingId: string,
   kind: 'requested' | 'approved' | 'rejected',
+  env?: Env,
 ): Promise<void> {
   const row = await db
     .prepare(
-      `SELECT b.starts_at,
+      `SELECT b.id AS booking_id,
+              b.starts_at,
+              b.customer_note,
               m.name AS menu_name,
               s.display_name AS staff_name,
               la.channel_access_token,
+              f.id AS friend_id,
+              f.display_name AS friend_name,
               f.line_user_id
          FROM bookings b
          INNER JOIN menus m ON m.id = b.menu_id
@@ -177,24 +183,46 @@ async function notifyForBooking(
     )
     .bind(bookingId)
     .first<{
+      booking_id: string;
       starts_at: string;
+      customer_note: string | null;
       menu_name: string;
       staff_name: string;
       channel_access_token: string;
+      friend_id: string;
+      friend_name: string | null;
       line_user_id: string;
     }>();
   if (!row) return;
+
+  const ctx = {
+    menuName: row.menu_name,
+    staffName: row.staff_name,
+    startsAtJst: startsAtJst(row.starts_at),
+    hoursBefore: 0,
+  };
+
   await sendBookingNotification({
     channelAccessToken: row.channel_access_token,
     toLineUserId: row.line_user_id,
     kind,
-    ctx: {
-      menuName: row.menu_name,
-      staffName: row.staff_name,
-      startsAtJst: startsAtJst(row.starts_at),
-      hoursBefore: 0,
-    },
+    ctx,
   });
+
+  if (kind === 'requested' && env) {
+    await sendAdminBookingRequestNotification(
+      env,
+      new LineClient(row.channel_access_token),
+      {
+        ...ctx,
+        bookingId: row.booking_id,
+        friendId: row.friend_id,
+        friendName: row.friend_name || '名前未取得',
+        lineUserId: row.line_user_id,
+        customerNote: row.customer_note,
+      },
+    );
+  }
 }
 
 // ================================================================
@@ -428,7 +456,7 @@ booking.post('/api/liff/booking/requests', async (c) => {
 
   // Fire-and-forget notification — failures must not roll back the booking.
   c.executionCtx.waitUntil(
-    notifyForBooking(c.env.DB, bookingId, 'requested').catch((err) =>
+    notifyForBooking(c.env.DB, bookingId, 'requested', c.env).catch((err) =>
       console.error('booking notify (requested) failed:', err),
     ),
   );

@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 
+const SQUARE_PAYMENT_URL = 'https://square.link/u/metWF8Wp';
+
 export default function Done() {
   // initLiff() は ?liffId=... をクエリから読むので、内部遷移でも保持する。
   // search を維持しないと「予約履歴を見る」→ WebView 再読み込みで liffId が失われる。
@@ -8,10 +10,18 @@ export default function Done() {
     <div className="space-y-4 text-center pt-12">
       <h1 className="text-2xl font-bold">リクエストを送信しました</h1>
       <p className="text-gray-600">
-        お店からの返信をお待ちください。
+        LINEに届く案内をご確認ください。
         <br />
-        確定すると LINE に通知が届きます。
+        お支払い完了後、トークルームへ一言お知らせください。
       </p>
+      <a
+        href={SQUARE_PAYMENT_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-block rounded-lg bg-[#06C755] px-5 py-3 text-white font-semibold"
+      >
+        お支払いへ進む
+      </a>
       <Link to={{ pathname: '/booking/history', search }} className="inline-block underline text-blue-600">
         予約履歴を見る
       </Link>
