@@ -1,5 +1,6 @@
 import type {
   Friend,
+  FriendScenarioStepControl,
   Tag,
   Scenario,
   ScenarioStep,
@@ -124,8 +125,10 @@ export type FriendListParams = {
   includeChatStatus?: boolean
   /** 並び替え。`oldest` で created_at ASC、未指定 / `recent` で DESC. */
   sort?: 'recent' | 'oldest'
-  /** `unhandled` で「最新が未返信の incoming」だけに絞る (サーバ側 SQL filter). */
+  /** `unhandled` で「最新が未返信 of incoming」だけに絞る (サーバ側 SQL filter). */
   handled?: 'unhandled'
+  /** `true` でブロック中の友だちも含めて取得する */
+  includeBlocked?: boolean
 }
 
 export type FriendWithTags = Friend & { tags: Tag[] }
@@ -150,6 +153,7 @@ export const api = {
       if (params?.includeChatStatus) query.includeChatStatus = 'true'
       if (params?.sort) query.sort = params.sort
       if (params?.handled) query.handled = params.handled
+      if (params?.includeBlocked) query.includeBlocked = 'true'
       return fetchApi<ApiResponse<PaginatedResponse<FriendListItem>>>(
         '/api/friends?' + new URLSearchParams(query)
       )
@@ -173,6 +177,15 @@ export const api = {
       fetchApi<ApiResponse<{ id: string | null; name: string | null; isDefault: boolean }>>(
         `/api/friends/${id}/rich-menu`,
       ),
+    delete: (id: string) =>
+      fetchApi<ApiResponse<null>>(`/api/friends/${id}`, { method: 'DELETE' }),
+    scenarioSteps: (id: string) =>
+      fetchApi<ApiResponse<FriendScenarioStepControl[]>>(`/api/friends/${id}/scenario-steps`),
+    updateScenarioStep: (friendId: string, stepId: string, isEnabled: boolean) =>
+      fetchApi<ApiResponse<null>>(`/api/friends/${friendId}/scenario-steps/${stepId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isEnabled }),
+      }),
   },
   tags: {
     list: () =>

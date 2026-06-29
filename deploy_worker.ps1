@@ -19,8 +19,5 @@ if (Test-Path $workerEnvPath) {
 }
 $env:CI = "true"
 
-Set-Location "apps/worker"
-Write-Host "Building..."
-vite build
-Write-Host "Deploying..."
-wrangler deploy
+Write-Host "Building and deploying worker via pnpm workspace..."
+corepack pnpm --filter worker run deploy

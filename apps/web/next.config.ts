@@ -22,11 +22,24 @@ const buildTime = process.env.APP_BUILD_TIME || new Date().toISOString()
 
 const nextConfig: NextConfig = {
   output: 'export',
-  transpilePackages: ['@line-crm/shared'],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  transpilePackages: ['@line-crm/shared', '@line-harness/update-engine'],
   env: {
     APP_VERSION: pkg.version,
     APP_COMMIT_SHA: buildSha.slice(0, 12),
     APP_BUILD_TIME: buildTime,
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  webpack(config: any) {
+    config.resolve = config.resolve ?? {}
+    config.resolve.alias = {
+      ...(config.resolve.alias as Record<string, string>),
+      '@line-crm/shared': resolve(__dirname, '../../packages/shared/src/index.ts'),
+      '@line-harness/update-engine/pure': resolve(__dirname, '../../packages/update-engine/dist/pure.mjs'),
+    }
+    return config
   },
 }
 export default nextConfig

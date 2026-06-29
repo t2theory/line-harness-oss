@@ -1,7 +1,7 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
-import type { Tag } from '@line-crm/shared'
+import { useEffect, useState } from 'react'
+import type { FriendScenarioStepControl, Tag } from '@line-crm/shared'
 import type { FriendListItem } from '@/lib/api'
 import { api } from '@/lib/api'
 import FriendListRow from './friend-list-row'
@@ -23,6 +23,10 @@ export default function FriendListTable({ friends, allTags, onRefresh }: Props) 
   const [addingTagForFriend, setAddingTagForFriend] = useState<string | null>(null)
   const [selectedTagId, setSelectedTagId] = useState('')
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [scenarioStepsByFriend, setScenarioStepsByFriend] = useState<Record<string, FriendScenarioStepControl[]>>({})
+  const [loadingScenarioForFriend, setLoadingScenarioForFriend] = useState<string | null>(null)
+  const [updatingStepId, setUpdatingStepId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   const toggleExpand = (id: string) => {
@@ -30,6 +34,42 @@ export default function FriendListTable({ friends, allTags, onRefresh }: Props) 
     setAddingTagForFriend(null)
     setSelectedTagId('')
     setError('')
+  }
+
+  useEffect(() => {
+    if (!expandedId || scenarioStepsByFriend[expandedId]) return
+    void loadScenarioSteps(expandedId)
+  }, [expandedId, scenarioStepsByFriend])
+
+  const loadScenarioSteps = async (friendId: string) => {
+    setLoadingScenarioForFriend(friendId)
+    setError('')
+    try {
+      const res = await api.friends.scenarioSteps(friendId)
+      setScenarioStepsByFriend((prev) => ({ ...prev, [friendId]: res.data }))
+    } catch {
+      setError('\u30b7\u30ca\u30ea\u30aa\u914d\u4fe1\u8a2d\u5b9a\u306e\u53d6\u5f97\u306b\u5931\u6557\u3057\u307e\u3057\u305f')
+    } finally {
+      setLoadingScenarioForFriend(null)
+    }
+  }
+
+  const handleScenarioStepToggle = async (friendId: string, stepId: string, nextEnabled: boolean) => {
+    setUpdatingStepId(stepId)
+    setError('')
+    try {
+      await api.friends.updateScenarioStep(friendId, stepId, nextEnabled)
+      setScenarioStepsByFriend((prev) => ({
+        ...prev,
+        [friendId]: (prev[friendId] || []).map((step) =>
+          step.stepId === stepId ? { ...step, isEnabled: nextEnabled } : step,
+        ),
+      }))
+    } catch {
+      setError('\u30b7\u30ca\u30ea\u30aa\u914d\u4fe1\u8a2d\u5b9a\u306e\u66f4\u65b0\u306b\u5931\u6557\u3057\u307e\u3057\u305f')
+    } finally {
+      setUpdatingStepId(null)
+    }
   }
 
   const handleAddTag = async (friendId: string) => {
@@ -58,6 +98,21 @@ export default function FriendListTable({ friends, allTags, onRefresh }: Props) 
       setError('タグの削除に失敗しました')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async (friendId: string, displayName: string | null) => {
+    const name = displayName || '（名前なし）'
+    if (!window.confirm(`「${name}」を削除しますか？\n\nこの操作は取り消せません。タグ・シナリオ登録も同時に削除されます。`)) return
+    setDeletingId(friendId)
+    setError('')
+    try {
+      await api.friends.delete(friendId)
+      onRefresh()
+    } catch {
+      setError('削除に失敗しました')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -161,6 +216,57 @@ export default function FriendListTable({ friends, allTags, onRefresh }: Props) 
                         </button>
                       )
                     )}
+
+                    {/* Scenario delivery controls */}
+                    <div className="pt-3 border-t border-gray-200 mt-1">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">{'\u30b7\u30ca\u30ea\u30aa\u914d\u4fe1\u7ba1\u7406'}</p>
+                      {loadingScenarioForFriend === friend.id ? (
+                        <p className="text-xs text-gray-400">{'\u8aad\u307f\u8fbc\u307f\u4e2d...'}</p>
+                      ) : (scenarioStepsByFriend[friend.id]?.length ?? 0) > 0 ? (
+                        <div className="space-y-2">
+                          {scenarioStepsByFriend[friend.id].map((step) => (
+                            <label
+                              key={step.stepId}
+                              className="flex items-start justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs"
+                            >
+                              <span className="min-w-0">
+                                <span className="block font-medium text-gray-700 truncate">
+                                  {step.scenarioName} / {step.stepOrder}{'\u901a\u76ee'}
+                                </span>
+                                <span className="block text-[11px] text-gray-400 truncate">
+                                  {step.messageType === 'text' ? step.messageContent : '[' + step.messageType + ']'}
+                                </span>
+                              </span>
+                              <span className="inline-flex flex-shrink-0 items-center gap-2 text-[11px] text-gray-600">
+                                {step.isEnabled ? '\u9001\u4fe1' : '\u505c\u6b62'}
+                                <input
+                                  type="checkbox"
+                                  checked={step.isEnabled}
+                                  disabled={updatingStepId === step.stepId}
+                                  onChange={(e) => handleScenarioStepToggle(friend.id, step.stepId, e.target.checked)}
+                                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                />
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400">{'\u914d\u4fe1\u4e2d\u306e\u30b7\u30ca\u30ea\u30aa\u306f\u3042\u308a\u307e\u305b\u3093'}</p>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-200 mt-1">
+                      <button
+                        onClick={() => handleDelete(friend.id, friend.displayName ?? null)}
+                        disabled={deletingId === friend.id}
+                        className="flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        {deletingId === friend.id ? '削除中...' : 'この友だちを削除'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -171,3 +277,4 @@ export default function FriendListTable({ friends, allTags, onRefresh }: Props) 
     </div>
   )
 }
+

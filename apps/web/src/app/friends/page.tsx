@@ -45,6 +45,7 @@ export default function FriendsPage() {
   const [searchSubmitted, setSearchSubmitted] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('recent')
   const [responseFilter, setResponseFilter] = useState<ResponseFilter>('all')
+  const [includeBlocked, setIncludeBlocked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -70,6 +71,7 @@ export default function FriendsPage() {
         includeChatStatus: true,
         sort: sortMode,
         handled: responseFilter === 'unhandled' ? 'unhandled' : undefined,
+        includeBlocked: includeBlocked || undefined,
       })
       if (res.success) {
         setFriends(res.data.items)
@@ -83,7 +85,7 @@ export default function FriendsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, selectedTagId, selectedAccountId, searchSubmitted, sortMode, responseFilter])
+  }, [page, selectedTagId, selectedAccountId, searchSubmitted, sortMode, responseFilter, includeBlocked])
 
   useEffect(() => {
     loadTags()
@@ -187,6 +189,17 @@ export default function FriendsPage() {
               <option value="all">すべて</option>
               <option value="unhandled">未対応のみ</option>
             </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-600 font-medium whitespace-nowrap flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeBlocked}
+                onChange={(e) => updateAndResetPage(() => setIncludeBlocked(e.target.checked))}
+                className="mr-1.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              ブロック中も表示
+            </label>
           </div>
           <span className="text-xs text-gray-500 ml-auto">
             {loading ? '読み込み中...' : `${total.toLocaleString('ja-JP')} 件`}

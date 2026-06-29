@@ -41,18 +41,64 @@ const inputCls =
   'w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500'
 
 export default function ScheduleInput({ mode, value, onChange }: Props) {
+  // relative モード用のローカル分解状態
+  const relDays = Math.floor(value.delayMinutes / (60 * 24))
+  const relHours = Math.floor((value.delayMinutes % (60 * 24)) / 60)
+  const relMins = value.delayMinutes % 60
+
+  const setRelative = (d: number, h: number, m: number, t?: string) => {
+    onChange({
+      ...value,
+      delayMinutes: d * 24 * 60 + h * 60 + m,
+      deliveryTime: t ?? value.deliveryTime,
+    })
+  }
+
   if (mode === 'relative') {
     return (
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">遅延 (分)</label>
-        <input
-          type="number"
-          min={0}
-          className={inputCls + ' w-full'}
-          value={value.delayMinutes}
-          onChange={(e) => onChange({ ...value, delayMinutes: Math.max(0, Number(e.target.value) || 0) })}
-        />
-        <p className="text-xs text-gray-400 mt-0.5">前のステップから</p>
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-gray-600">前のステップからの待機</label>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="number"
+            min={0}
+            className={inputCls}
+            value={relDays}
+            onChange={(e) => setRelative(Math.max(0, Number(e.target.value) || 0), relHours, relMins)}
+          />
+          <span className="text-sm text-gray-700">日</span>
+          <input
+            type="number"
+            min={0}
+            max={23}
+            className={inputCls}
+            value={relHours}
+            onChange={(e) => setRelative(relDays, Math.max(0, Math.min(23, Number(e.target.value) || 0)), relMins)}
+          />
+          <span className="text-sm text-gray-700">時間</span>
+          <input
+            type="number"
+            min={0}
+            max={59}
+            className={inputCls}
+            value={relMins}
+            onChange={(e) => setRelative(relDays, relHours, Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
+          />
+          <span className="text-sm text-gray-700">分後</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-600 font-medium">配信時刻</span>
+          <input
+            type="time"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            value={value.deliveryTime}
+            onChange={(e) => setRelative(relDays, relHours, relMins, e.target.value)}
+          />
+          <span className="text-xs text-gray-400">に配信</span>
+        </div>
+        <p className="text-xs text-gray-400">
+          合計: {(relDays * 24 * 60 + relHours * 60 + relMins).toLocaleString('ja-JP')} 分後
+        </p>
       </div>
     )
   }

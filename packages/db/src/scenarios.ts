@@ -51,6 +51,90 @@ export interface FriendScenario {
   updated_at: string;
 }
 
+export interface FriendScenarioStepControl {
+  friend_scenario_id: string;
+  scenario_id: string;
+  scenario_name: string;
+  friend_scenario_status: FriendScenarioStatus | 'delivering';
+  current_step_order: number;
+  step_id: string;
+  step_order: number;
+  message_type: MessageType;
+  message_content: string;
+  is_enabled: number;
+}
+
+// ============================================================
+// Friend-level Scenario Step Controls
+// ============================================================
+
+export async function isFriendScenarioStepEnabled(
+  db: D1Database,
+  friendId: string,
+  scenarioStepId: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT is_enabled FROM friend_scenario_step_settings
+       WHERE friend_id = ? AND scenario_step_id = ?`,
+    )
+    .bind(friendId, scenarioStepId)
+    .first<{ is_enabled: number }>();
+  return row ? row.is_enabled !== 0 : true;
+}
+
+export async function setFriendScenarioStepEnabled(
+  db: D1Database,
+  friendId: string,
+  scenarioStepId: string,
+  isEnabled: boolean,
+): Promise<void> {
+  const now = jstNow();
+  await db
+    .prepare(
+      `INSERT INTO friend_scenario_step_settings
+         (friend_id, scenario_step_id, is_enabled, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(friend_id, scenario_step_id) DO UPDATE SET
+         is_enabled = excluded.is_enabled,
+         updated_at = excluded.updated_at`,
+    )
+    .bind(friendId, scenarioStepId, isEnabled ? 1 : 0, now, now)
+    .run();
+}
+
+export async function getFriendScenarioStepControls(
+  db: D1Database,
+  friendId: string,
+): Promise<FriendScenarioStepControl[]> {
+  const result = await db
+    .prepare(
+      `SELECT
+         fs.id AS friend_scenario_id,
+         s.id AS scenario_id,
+         s.name AS scenario_name,
+         fs.status AS friend_scenario_status,
+         fs.current_step_order AS current_step_order,
+         ss.id AS step_id,
+         ss.step_order AS step_order,
+         ss.message_type AS message_type,
+         ss.message_content AS message_content,
+         COALESCE(fsss.is_enabled, 1) AS is_enabled
+       FROM friend_scenarios fs
+       JOIN scenarios s ON s.id = fs.scenario_id
+       JOIN scenario_steps ss ON ss.scenario_id = s.id
+       LEFT JOIN friend_scenario_step_settings fsss
+         ON fsss.friend_id = fs.friend_id
+        AND fsss.scenario_step_id = ss.id
+       WHERE fs.friend_id = ?
+         AND fs.status IN ('active', 'paused', 'delivering')
+       ORDER BY fs.started_at DESC, ss.step_order ASC`,
+    )
+    .bind(friendId)
+    .all<FriendScenarioStepControl>();
+  return result.results;
+}
+
 // ============================================================
 // Scenario CRUD
 // ============================================================

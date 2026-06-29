@@ -656,7 +656,7 @@ export default function ScenarioDetailClient({ scenarioId }: { scenarioId: strin
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">メッセージ内容 <span className="text-red-500">*</span></label>
                     <textarea
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-y min-h-[96px]"
                       rows={4}
                       placeholder="メッセージ内容を入力..."
                       value={stepForm.messageContent}

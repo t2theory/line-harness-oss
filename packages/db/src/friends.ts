@@ -235,3 +235,47 @@ export async function getFriendCount(db: D1Database): Promise<number> {
     .first<{ count: number }>();
   return row?.count ?? 0;
 }
+
+/**
+ * 友だちを削除する。
+ * D1はデフォルトで外部キー制約を有効化しているため、
+ * CASCADE なしで friends を参照している全テーブルを
+ * 正しい順序で手動削除する必要がある。
+ *
+ * 削除順序:
+ * 1. event_booking_reminders (event_bookings の子: CASCADE なし)
+ * 2. event_bookings          (friends を参照: CASCADE なし)
+ * 3. booking_reminders       (bookings の子: CASCADE なし)
+ * 4. bookings                (friends を参照: CASCADE なし)
+ * 5. friends 本体            (friend_tags / friend_scenarios 等は ON DELETE CASCADE で自動削除)
+ */
+export async function deleteFriend(
+  db: D1Database,
+  friendId: string,
+): Promise<void> {
+  // イベント予約リマインダー（event_bookings の子テーブル）
+  await db
+    .prepare(`DELETE FROM event_booking_reminders WHERE booking_id IN (SELECT id FROM event_bookings WHERE friend_id = ?)`)
+    .bind(friendId)
+    .run();
+  // イベント予約（friends を参照、CASCADE なし）
+  await db
+    .prepare(`DELETE FROM event_bookings WHERE friend_id = ?`)
+    .bind(friendId)
+    .run();
+  // 予約リマインダー（bookings の子テーブル）
+  await db
+    .prepare(`DELETE FROM booking_reminders WHERE booking_id IN (SELECT id FROM bookings WHERE friend_id = ?)`)
+    .bind(friendId)
+    .run();
+  // 予約（friends を参照、CASCADE なし）
+  await db
+    .prepare(`DELETE FROM bookings WHERE friend_id = ?`)
+    .bind(friendId)
+    .run();
+  // 友だち本体（その他の外部キーは ON DELETE CASCADE / SET NULL で自動処理）
+  await db
+    .prepare(`DELETE FROM friends WHERE id = ?`)
+    .bind(friendId)
+    .run();
+}

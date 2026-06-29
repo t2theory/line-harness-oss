@@ -8,6 +8,9 @@ import {
   getFriendTags,
   getScenarios,
   enrollFriendInScenario,
+  deleteFriend,
+  getFriendScenarioStepControls,
+  setFriendScenarioStepEnabled,
   jstNow,
 } from '@line-crm/db';
 import type { Friend as DbFriend, Tag as DbTag } from '@line-crm/db';
@@ -78,6 +81,21 @@ function serializeTag(row: DbTag) {
   };
 }
 
+function serializeScenarioStepControl(row: Awaited<ReturnType<typeof getFriendScenarioStepControls>>[number]) {
+  return {
+    friendScenarioId: row.friend_scenario_id,
+    scenarioId: row.scenario_id,
+    scenarioName: row.scenario_name,
+    friendScenarioStatus: row.friend_scenario_status,
+    currentStepOrder: row.current_step_order,
+    stepId: row.step_id,
+    stepOrder: row.step_order,
+    messageType: row.message_type,
+    messageContent: row.message_content,
+    isEnabled: row.is_enabled !== 0,
+  };
+}
+
 // GET /api/friends - list with pagination
 friends.get('/api/friends', async (c) => {
   try {
@@ -108,6 +126,7 @@ friends.get('/api/friends', async (c) => {
     // hide rows on the current page and leave `total` misleading.
     const handledFilter: 'unhandled' | null =
       c.req.query('handled') === 'unhandled' ? 'unhandled' : null;
+    const includeBlocked = c.req.query('includeBlocked') === 'true';
 
     const db = c.env.DB;
 
@@ -125,6 +144,9 @@ friends.get('/api/friends', async (c) => {
     if (search) {
       conditions.push('f.display_name LIKE ?');
       binds.push(`%${search}%`);
+    }
+    if (!includeBlocked) {
+      conditions.push('f.is_following = 1');
     }
     // Unhandled filter: chats.status === 'unread'.
     //
@@ -417,6 +439,53 @@ friends.get('/api/friends/:id', async (c) => {
   }
 });
 
+// GET /api/friends/:id/scenario-steps - per-friend scenario step controls
+friends.get('/api/friends/:id/scenario-steps', async (c) => {
+  try {
+    const friendId = c.req.param('id');
+    const friend = await getFriendById(c.env.DB, friendId);
+    if (!friend) {
+      return c.json({ success: false, error: 'Friend not found' }, 404);
+    }
+
+    const rows = await getFriendScenarioStepControls(c.env.DB, friendId);
+    return c.json({ success: true, data: rows.map(serializeScenarioStepControl) });
+  } catch (err) {
+    console.error('GET /api/friends/:id/scenario-steps error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// PATCH /api/friends/:id/scenario-steps/:stepId - enable/disable one step for one friend
+friends.patch('/api/friends/:id/scenario-steps/:stepId', async (c) => {
+  try {
+    const friendId = c.req.param('id');
+    const stepId = c.req.param('stepId');
+    const body = await c.req.json<{ isEnabled?: boolean }>();
+    if (typeof body.isEnabled !== 'boolean') {
+      return c.json({ success: false, error: 'isEnabled boolean is required' }, 400);
+    }
+
+    const friend = await getFriendById(c.env.DB, friendId);
+    if (!friend) {
+      return c.json({ success: false, error: 'Friend not found' }, 404);
+    }
+    const step = await c.env.DB
+      .prepare('SELECT id FROM scenario_steps WHERE id = ?')
+      .bind(stepId)
+      .first<{ id: string }>();
+    if (!step) {
+      return c.json({ success: false, error: 'Scenario step not found' }, 404);
+    }
+
+    await setFriendScenarioStepEnabled(c.env.DB, friendId, stepId, body.isEnabled);
+    return c.json({ success: true, data: null });
+  } catch (err) {
+    console.error('PATCH /api/friends/:id/scenario-steps/:stepId error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
 // POST /api/friends/:id/tags - add tag
 friends.post('/api/friends/:id/tags', async (c) => {
   try {
@@ -593,4 +662,23 @@ friends.post('/api/friends/:id/messages', async (c) => {
   }
 });
 
+// DELETE /api/friends/:id — 友だちを削除する
+friends.delete('/api/friends/:id', async (c) => {
+  const db = c.env.DB;
+  const friendId = c.req.param('id');
+  try {
+    const friend = await getFriendById(db, friendId);
+    if (!friend) {
+      return c.json({ success: false, error: 'Friend not found' }, 404);
+    }
+    await deleteFriend(db, friendId);
+    return c.json({ success: true });
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('DELETE /api/friends/:id error:', errMsg);
+    return c.json({ success: false, error: errMsg }, 500);
+  }
+});
+
 export { friends };
+

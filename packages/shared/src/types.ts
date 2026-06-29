@@ -233,6 +233,19 @@ export interface FriendScenario {
 // -----------------------------------------------------------------------------
 
 /** 配信対象種別 */
+export interface FriendScenarioStepControl {
+  friendScenarioId: string;
+  scenarioId: string;
+  scenarioName: string;
+  friendScenarioStatus: FriendScenarioStatus | 'delivering';
+  currentStepOrder: number;
+  stepId: string;
+  stepOrder: number;
+  messageType: MessageType;
+  messageContent: string;
+  isEnabled: boolean;
+}
+
 export type BroadcastTargetType = "all" | "tag" | "segment" | "multi-account-dedup";
 
 /** 配信ステータス */

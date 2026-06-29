@@ -10,6 +10,7 @@ import {
   computeNextDeliveryAt,
   resolveStepContent,
   addTagToFriend,
+  isFriendScenarioStepEnabled,
   type DeliveryMode,
 } from '@line-crm/db';
 import type { LineClient } from '@line-crm/line-sdk';
@@ -180,6 +181,20 @@ async function processSingleDelivery(
 
   if (!currentStep) {
     await completeFriendScenario(db, fs.id);
+    return false;
+  }
+
+  const stepEnabled = await isFriendScenarioStepEnabled(db, fs.friend_id, currentStep.id);
+  if (!stepEnabled) {
+    const currentIndex = steps.indexOf(currentStep);
+    const nextStep = currentIndex + 1 < steps.length ? steps[currentIndex + 1] : null;
+    console.log(`Scenario step disabled for friend: friend=${fs.friend_id} step=${currentStep.id}`);
+    if (nextStep) {
+      const jitteredDate = jitterDeliveryTime(nextDeliveryFor(nextStep));
+      await advanceFriendScenario(db, fs.id, currentStep.step_order, jitteredDate.toISOString().slice(0, -1) + '+09:00');
+    } else {
+      await completeFriendScenario(db, fs.id);
+    }
     return false;
   }
 

@@ -1,4 +1,4 @@
-name = "line-harness"
+﻿name = "line-harness"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
@@ -15,6 +15,7 @@ workers_dev = true
 # 使い方: npx wrangler deploy
 # ═══════════════════════════════════════════════════════════════
 account_id = "aee83225e74e3c5155d60601bd27e875"
+send_email = [{ name = "EMAIL" }]
 
 [assets]
 directory = "dist/client"
@@ -51,6 +52,9 @@ CF_ACCOUNT_ID = "YOUR_DEV_ACCOUNT_ID"
 ADMIN_ORIGIN = "https://line-harness-admin-8j4.pages.dev,https://line-harness-liff-42f.pages.dev,https://loopheart.jp"
 ADMIN_ALLOW_CROSS_SITE = "true"
 WORKER_URL = "https://line-harness.t2theory.workers.dev"
+FRIEND_ADD_NOTIFY_TO = "happy.life.reboot@gmail.com"
+FRIEND_ADD_NOTIFY_FROM = "noreply@loopheart.jp"
+FRIEND_ADD_NOTIFY_FROM_NAME = "LINE Harness"
 
 # ═══════════════════════════════════════════════════════════════
 # 本番環境
@@ -59,6 +63,7 @@ WORKER_URL = "https://line-harness.t2theory.workers.dev"
 # ═══════════════════════════════════════════════════════════════
 [env.production]
 account_id = "aee83225e74e3c5155d60601bd27e875"
+send_email = [{ name = "EMAIL" }]
 
 [env.production.assets]
 directory = "dist/client"
@@ -89,3 +94,8 @@ WORKER_PUBLIC_URL = "https://your-worker-name.workers.dev"
 ADMIN_PUBLIC_URL = "https://line-harness-admin.pages.dev"
 LIFF_PUBLIC_URL = "https://line-harness-liff.pages.dev"
 CF_ACCOUNT_ID = "YOUR_ACCOUNT_ID"
+FRIEND_ADD_NOTIFY_TO = "happy.life.reboot@gmail.com"
+FRIEND_ADD_NOTIFY_FROM = "noreply@loopheart.jp"
+FRIEND_ADD_NOTIFY_FROM_NAME = "LINE Harness"
+
+
