@@ -599,5 +599,4 @@ profileRefresh.get('/api/admin/friend-debug/:id', async (c) => {
     },
   });
 });
-
 export { profileRefresh };

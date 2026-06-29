@@ -1,60 +1,53 @@
-type SendEmailBinding = {
-  send(input: {
-    to: string | string[];
-    from: { email: string; name?: string };
-    subject: string;
-    text: string;
-    html?: string;
-  }): Promise<unknown>;
+import type { LineClient } from '@line-crm/line-sdk';
+
+type FriendAddNotifyEnv = {
+  ADMIN_LINE_USER_ID?: string;
 };
 
-type FriendAddEmailEnv = {
-  EMAIL?: SendEmailBinding;
-  FRIEND_ADD_NOTIFY_TO?: string;
-  FRIEND_ADD_NOTIFY_FROM?: string;
-  FRIEND_ADD_NOTIFY_FROM_NAME?: string;
-};
-
-export async function sendFriendAddEmailNotification(
-  env: FriendAddEmailEnv,
+export async function sendFriendAddNotification(
+  env: FriendAddNotifyEnv,
+  lineClient: LineClient,
   friend: { id: string; display_name: string | null; line_user_id: string; ref_code?: string | null },
   lineAccountId: string | null,
 ): Promise<boolean> {
-  const email = env.EMAIL;
-  const to = env.FRIEND_ADD_NOTIFY_TO || 'happy.life.reboot@gmail.com';
-  const from = env.FRIEND_ADD_NOTIFY_FROM;
-  if (!email || !from) {
-    console.warn('[friend-add-email] skipped: EMAIL binding or FRIEND_ADD_NOTIFY_FROM is not configured');
+  const adminLineUserIdsRaw = env.ADMIN_LINE_USER_ID;
+  if (!adminLineUserIdsRaw) {
+    console.warn('[friend-add-notify] skipped: ADMIN_LINE_USER_ID is not configured');
     return false;
   }
 
-  const displayName = friend.display_name || '????';
+  // Comma-separated support
+  const adminLineUserIds = adminLineUserIdsRaw.split(',').map((id) => id.trim()).filter(Boolean);
+  if (adminLineUserIds.length === 0) {
+    return false;
+  }
+
+  const displayName = friend.display_name || '名前未取得';
   const lines = [
-    'L????????????????????',
+    '🔔 Lハーネスに新しい友だちが登録されました！',
     '',
-    `???: ${displayName}`,
-    `???ID: ${friend.id}`,
-    `LINE????ID: ${friend.line_user_id}`,
-    lineAccountId ? `LINE?????ID: ${lineAccountId}` : '',
-    friend.ref_code ? `?????: ${friend.ref_code}` : '',
+    `表示名: ${displayName}`,
+    `友だちID: ${friend.id}`,
+    `LINEユーザーID: ${friend.line_user_id}`,
+    lineAccountId ? `LINEアカウントID: ${lineAccountId}` : '',
+    friend.ref_code ? `流入コード: ${friend.ref_code}` : '',
   ].filter((line) => line !== '');
   const text = lines.join('\n');
 
-  await email.send({
-    to,
-    from: { email: from, name: env.FRIEND_ADD_NOTIFY_FROM_NAME || 'LINE Harness' },
-    subject: `?L??????????: ${displayName}`,
-    text,
-    html: lines.map((line) => line ? escapeHtml(line) : '').join('<br>'),
-  });
-  return true;
-}
+  let successCount = 0;
+  for (const userId of adminLineUserIds) {
+    try {
+      await lineClient.pushMessage(userId, [
+        {
+          type: 'text',
+          text,
+        },
+      ]);
+      successCount++;
+    } catch (error) {
+      console.error(`[friend-add-notify] LINE push failed for ${userId}:`, error);
+    }
+  }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return successCount > 0;
 }

@@ -90,10 +90,7 @@ export type Env = {
     LINE_LOGIN_CHANNEL_ID: string;
     LINE_LOGIN_CHANNEL_SECRET: string;
     WORKER_URL: string;
-    EMAIL?: { send(input: { to: string | string[]; from: { email: string; name?: string }; subject: string; text: string; html?: string }): Promise<unknown> };
-    FRIEND_ADD_NOTIFY_TO?: string;
-    FRIEND_ADD_NOTIFY_FROM?: string;
-    FRIEND_ADD_NOTIFY_FROM_NAME?: string;
+    ADMIN_LINE_USER_ID?: string;
     // Admin auth topology (see middleware/admin-auth-config.ts):
     ADMIN_ORIGIN?: string;          // Comma-separated admin web origin allowlist for credentialed CORS
     ADMIN_COOKIE_SAMESITE?: string; // Optional override: 'Strict' | 'Lax' | 'None'

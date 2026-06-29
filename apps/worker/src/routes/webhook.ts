@@ -23,7 +23,7 @@ import {
 import type { EntryRoute, Friend } from '@line-crm/db';
 import { fireEvent } from '../services/event-bus.js';
 import { buildMessage, expandVariables } from '../services/step-delivery.js';
-import { sendFriendAddEmailNotification } from '../services/friend-add-email.js';
+import { sendFriendAddNotification } from '../services/friend-add-email.js';
 import type { Env } from '../index.js';
 
 const webhook = new Hono<Env>();
@@ -366,9 +366,9 @@ async function handleEvent(
     await fireEvent(db, 'friend_add', { friendId: friend.id, eventData: { displayName: friend.display_name } }, lineAccessToken, lineAccountId);
     if (env) {
       try {
-        await sendFriendAddEmailNotification(env, friend, lineAccountId);
+        await sendFriendAddNotification(env, lineClient, friend, lineAccountId);
       } catch (err) {
-        console.error('[follow] friend-add email notification failed', err);
+        console.error('[follow] friend-add push notification failed', err);
       }
     }
     return;

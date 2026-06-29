@@ -1,31 +1,35 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sendFriendAddEmailNotification } from './friend-add-email.js';
+import { sendFriendAddNotification } from './friend-add-email.js';
+import type { LineClient } from '@line-crm/line-sdk';
 
-describe('sendFriendAddEmailNotification', () => {
-  it('skips without throwing when the email binding or sender is not configured', async () => {
+describe('sendFriendAddNotification', () => {
+  it('skips without throwing when the admin line user id is not configured', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    await expect(sendFriendAddEmailNotification({}, { id: 'f1', display_name: 'Test', line_user_id: 'U1' }, null)).resolves.toBe(false);
+    const mockClient = { pushMessage: vi.fn() } as unknown as LineClient;
+    await expect(sendFriendAddNotification({}, mockClient, { id: 'f1', display_name: 'Test', line_user_id: 'U1' }, null)).resolves.toBe(false);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
 
-  it('sends a friend-add notification to the configured recipient', async () => {
-    const send = vi.fn().mockResolvedValue({ messageId: 'm1' });
-    const sent = await sendFriendAddEmailNotification(
+  it('sends a friend-add notification via LINE', async () => {
+    const pushMessage = vi.fn().mockResolvedValue({});
+    const mockClient = { pushMessage } as unknown as LineClient;
+
+    const sent = await sendFriendAddNotification(
       {
-        EMAIL: { send },
-        FRIEND_ADD_NOTIFY_FROM: 'notice@example.com',
-        FRIEND_ADD_NOTIFY_TO: 'happy.life.reboot@gmail.com',
+        ADMIN_LINE_USER_ID: 'UADMIN123',
       },
-      { id: 'f1', display_name: '?? ??', line_user_id: 'U1', ref_code: 'lp-a' },
+      mockClient,
+      { id: 'f1', display_name: '佐藤 花子', line_user_id: 'U1', ref_code: 'lp-a' },
       'account-1',
     );
 
     expect(sent).toBe(true);
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({
-      to: 'happy.life.reboot@gmail.com',
-      from: { email: 'notice@example.com', name: 'LINE Harness' },
-      subject: '?L??????????: ?? ??',
-    }));
+    expect(pushMessage).toHaveBeenCalledWith('UADMIN123', [
+      {
+        type: 'text',
+        text: expect.stringContaining('Lハーネスに新しい友だちが登録されました'),
+      },
+    ]);
   });
 });
