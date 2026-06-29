@@ -32,7 +32,7 @@ export function renderNotificationText(
   const detail = `\nメニュー: ${ctx.menuName}\n担当: ${ctx.staffName}\n日時: ${ctx.startsAtJst}`;
   switch (kind) {
     case 'requested':
-      return `予約リクエストを受け付けました。${detail}\n\nお店からの返信をお待ちください。\n\n▼ お支払いはコチラ（4,980円）\n${SQUARE_PAYMENT_URL}\n\nお支払い完了後、このトークルームへ一言お知らせください。`;
+      return `予約リクエストを受け付けました。${detail}\n\nお店からの返信をお待ちください。\n\n▼ お支払いはコチラ（1,980円）\n${SQUARE_PAYMENT_URL}\n\nお支払い完了後、このトークルームへ一言お知らせください。`;
     case 'approved':
       return `予約が確定しました。${detail}\n\n変更・キャンセルはお店に直接ご連絡ください。`;
     case 'rejected':
