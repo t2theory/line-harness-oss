@@ -74,6 +74,96 @@ function googleCalendarRedirectUri(env: Env['Bindings']): string {
 
 // ========== 接続管理 ==========
 
+
+calendar.get('/api/integrations/google-calendar/oauth/start', async (c) => {
+  try {
+    const calendarId = c.req.query('calendarId') || 'primary';
+    if (!c.env.GOOGLE_CALENDAR_CLIENT_ID || !c.env.GOOGLE_CALENDAR_CLIENT_SECRET) {
+      return c.json({ success: false, error: 'GOOGLE_CALENDAR_CLIENT_ID and GOOGLE_CALENDAR_CLIENT_SECRET are required' }, 500);
+    }
+
+    const state = await buildGoogleOAuthState(c.env, { calendarId, ts: Date.now() });
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    url.searchParams.set('client_id', c.env.GOOGLE_CALENDAR_CLIENT_ID);
+    url.searchParams.set('redirect_uri', googleCalendarRedirectUri(c.env));
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy');
+    url.searchParams.set('access_type', 'offline');
+    url.searchParams.set('prompt', 'consent');
+    url.searchParams.set('state', state);
+
+    return c.json({ success: true, data: { url: url.toString(), redirectUri: googleCalendarRedirectUri(c.env) } });
+  } catch (err) {
+    console.error('GET /api/integrations/google-calendar/oauth/start error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+calendar.get('/api/integrations/google-calendar/oauth/callback', async (c) => {
+  try {
+    const code = c.req.query('code');
+    const stateValue = c.req.query('state');
+    if (!code || !stateValue) return c.text('Missing code or state', 400);
+    if (!c.env.GOOGLE_CALENDAR_CLIENT_ID || !c.env.GOOGLE_CALENDAR_CLIENT_SECRET) {
+      return c.text('Google OAuth env vars are not configured', 500);
+    }
+
+    const state = await verifyGoogleOAuthState(c.env, stateValue);
+    if (!state) return c.text('Invalid or expired state', 400);
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: c.env.GOOGLE_CALENDAR_CLIENT_ID,
+        client_secret: c.env.GOOGLE_CALENDAR_CLIENT_SECRET,
+        redirect_uri: googleCalendarRedirectUri(c.env),
+        grant_type: 'authorization_code',
+      }),
+    });
+    if (!tokenRes.ok) {
+      const text = await tokenRes.text().catch(() => '');
+      console.error('Google OAuth token exchange failed:', tokenRes.status, text);
+      return c.text('Google OAuth token exchange failed', 502);
+    }
+
+    const tokens = (await tokenRes.json()) as { access_token?: string; refresh_token?: string };
+    if (!tokens.access_token) return c.text('Google OAuth response missing access_token', 502);
+
+    const now = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, -1);
+    const existing = await c.env.DB
+      .prepare('SELECT id, refresh_token FROM google_calendar_connections WHERE calendar_id = ? ORDER BY updated_at DESC LIMIT 1')
+      .bind(state.calendarId)
+      .first<{ id: string; refresh_token: string | null }>();
+
+    if (existing) {
+      await c.env.DB
+        .prepare(`UPDATE google_calendar_connections
+                     SET access_token = ?,
+                         refresh_token = ?,
+                         auth_type = 'oauth',
+                         is_active = 1,
+                         updated_at = ?
+                   WHERE id = ?`)
+        .bind(tokens.access_token, tokens.refresh_token ?? existing.refresh_token, now, existing.id)
+        .run();
+    } else {
+      await createCalendarConnection(c.env.DB, {
+        calendarId: state.calendarId,
+        authType: 'oauth',
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+      });
+    }
+
+    return c.html(`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Google Calendar connected</title><body><h1>Google Calendar connected</h1><p>${state.calendarId} ?L?????????????????????????</p></body></html>`);
+  } catch (err) {
+    console.error('GET /api/integrations/google-calendar/oauth/callback error:', err);
+    return c.text('Internal server error', 500);
+  }
+});
+
 calendar.get('/api/integrations/google-calendar', async (c) => {
   try {
     const items = await getCalendarConnections(c.env.DB);
