@@ -1,6 +1,6 @@
 import { getIdToken, getLiffId } from './liff-auth.js';
 
-const BASE = import.meta.env.VITE_API_BASE ?? '';
+const BASE = import.meta.env.VITE_API_BASE || 'https://line-harness.t2theory.workers.dev';
 
 export interface MenuItem {
   id: string;
