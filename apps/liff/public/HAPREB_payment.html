@@ -378,7 +378,7 @@ if (uid || lh) {
   // L-Harness環境（Cloudflare Pages上のLIFF）にホストされている前提。
   // liff.line.meの絶対パスを指定するとAndroidでintentエラーになるため、
   // 相対パスに明示的なliffIdを付与してReactアプリ側で認識できるようにします。
-  btn.href = '/booking?liffId=2010454210-ewqCZNtD';
+  btn.href = 'https://line-harness-liff-42f.pages.dev/booking?liffId=2010454210-ewqCZNtD';
   btn.textContent = '日程を選んで申し込む →';
   var note = document.getElementById('btn-note');
   note.innerHTML = '予約画面へ移動し、ご希望の日時をお選びください📌<br>ご希望の日時がない場合はトークルームへお気軽にどうぞ😊';
