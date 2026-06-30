@@ -92,6 +92,10 @@ calendar.get('/api/integrations/google-calendar/oauth/start', async (c) => {
     url.searchParams.set('prompt', 'consent');
     url.searchParams.set('state', state);
 
+    if (c.req.query('redirect') === '1') {
+      return c.redirect(url.toString(), 302);
+    }
+
     return c.json({ success: true, data: { url: url.toString(), redirectUri: googleCalendarRedirectUri(c.env) } });
   } catch (err) {
     console.error('GET /api/integrations/google-calendar/oauth/start error:', err);
