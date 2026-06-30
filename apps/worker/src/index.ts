@@ -91,6 +91,9 @@ export type Env = {
     LINE_LOGIN_CHANNEL_SECRET: string;
     WORKER_URL: string;
     ADMIN_LINE_USER_ID?: string;
+    GOOGLE_CALENDAR_CLIENT_ID?: string;
+    GOOGLE_CALENDAR_CLIENT_SECRET?: string;
+    GOOGLE_CALENDAR_REDIRECT_URI?: string;
     // Admin auth topology (see middleware/admin-auth-config.ts):
     ADMIN_ORIGIN?: string;          // Comma-separated admin web origin allowlist for credentialed CORS
     ADMIN_COOKIE_SAMESITE?: string; // Optional override: 'Strict' | 'Lax' | 'None'

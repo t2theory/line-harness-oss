@@ -21,6 +21,7 @@ import {
   saveIdempotencyResponse,
 } from '../services/booking-idempotency.js';
 import { sendAdminBookingRequestNotification, sendBookingNotification } from '../services/booking-notifier.js';
+import { createGoogleCalendarEventForBooking, deleteGoogleCalendarEventForBooking } from '../services/google-calendar.js';
 import {
   DEFAULT_ACCOUNT_SETTINGS,
   IDEMPOTENCY_TTL_MINUTES,
@@ -1017,6 +1018,11 @@ booking.patch('/api/booking/admin/requests/:id', async (c) => {
         console.error('booking notify (approved) failed:', err),
       ),
     );
+    c.executionCtx.waitUntil(
+      createGoogleCalendarEventForBooking(c.env.DB, c.env, id).catch((err) =>
+        console.error('booking google calendar create failed:', err),
+      ),
+    );
   } else if (next === 'rejected') {
     c.executionCtx.waitUntil(
       notifyForBooking(c.env.DB, id, 'rejected').catch((err) =>
@@ -1030,6 +1036,11 @@ booking.patch('/api/booking/admin/requests/:id', async (c) => {
       )
       .bind(id)
       .run();
+    c.executionCtx.waitUntil(
+      deleteGoogleCalendarEventForBooking(c.env.DB, c.env, id).catch((err) =>
+        console.error('booking google calendar delete failed:', err),
+      ),
+    );
   }
 
   return c.json({ status: next });

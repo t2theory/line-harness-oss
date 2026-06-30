@@ -17,6 +17,61 @@ import type { Env } from '../index.js';
 
 const calendar = new Hono<Env>();
 
+
+type GoogleOAuthState = {
+  calendarId: string;
+  ts: number;
+};
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlEncodeString(value: string): string {
+  return base64UrlEncode(new TextEncoder().encode(value));
+}
+
+function base64UrlDecodeString(value: string): string {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
+  const binary = atob(base64);
+  return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+}
+
+async function signGoogleOAuthState(secret: string, payload: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return base64UrlEncode(new Uint8Array(sig));
+}
+
+async function buildGoogleOAuthState(env: Env['Bindings'], state: GoogleOAuthState): Promise<string> {
+  const payload = base64UrlEncodeString(JSON.stringify(state));
+  const sig = await signGoogleOAuthState(env.API_KEY, payload);
+  return `${payload}.${sig}`;
+}
+
+async function verifyGoogleOAuthState(env: Env['Bindings'], value: string): Promise<GoogleOAuthState | null> {
+  const [payload, sig] = value.split('.');
+  if (!payload || !sig) return null;
+  const expected = await signGoogleOAuthState(env.API_KEY, payload);
+  if (sig !== expected) return null;
+  const parsed = JSON.parse(base64UrlDecodeString(payload)) as GoogleOAuthState;
+  if (!parsed.calendarId || !parsed.ts) return null;
+  if (Date.now() - parsed.ts > 10 * 60 * 1000) return null;
+  return parsed;
+}
+
+function googleCalendarRedirectUri(env: Env['Bindings']): string {
+  return env.GOOGLE_CALENDAR_REDIRECT_URI || `${env.WORKER_URL}/api/integrations/google-calendar/oauth/callback`;
+}
+
 // ========== 接続管理 ==========
 
 calendar.get('/api/integrations/google-calendar', async (c) => {
