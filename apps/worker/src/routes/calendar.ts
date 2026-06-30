@@ -90,6 +90,7 @@ calendar.get('/api/integrations/google-calendar/oauth/start', async (c) => {
     url.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy');
     url.searchParams.set('access_type', 'offline');
     url.searchParams.set('prompt', 'consent select_account');
+    if (calendarId.includes('@')) url.searchParams.set('login_hint', calendarId);
     url.searchParams.set('state', state);
 
     if (c.req.query('redirect') === '1') {
