@@ -162,7 +162,7 @@ calendar.get('/api/integrations/google-calendar/oauth/callback', async (c) => {
       });
     }
 
-    return c.html(`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Google Calendar connected</title><body><h1>Google Calendar connected</h1><p>${state.calendarId} ?L?????????????????????????</p></body></html>`);
+    return c.html(`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Google Calendar connected</title><body><h1>Google Calendar connected</h1><p>${state.calendarId} connected successfully.</p></body></html>`);
   } catch (err) {
     console.error('GET /api/integrations/google-calendar/oauth/callback error:', err);
     return c.text('Internal server error', 500);
