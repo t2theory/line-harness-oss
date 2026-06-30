@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/header'
 import { bookingApi, type BookingMenu, type BookingStaff, type StaffMenuMatrix } from '@/lib/api'
@@ -8,7 +8,7 @@ import { useAccount } from '@/contexts/account-context'
 
 // このメニューを各スタッフが提供するか／料金所要を上書きするかの一括編集 UI。
 // staff_menus は staff_id × menu_id 主キー。スタッフごとに個別 PUT で書く。
-export default function MenuStaffMatrix() {
+function MenuStaffMatrixContent() {
   const sp = useSearchParams()
   const id = sp.get('menu_id') ?? ''
   const { selectedAccountId } = useAccount()
@@ -233,5 +233,13 @@ export default function MenuStaffMatrix() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function MenuStaffMatrix() {
+  return (
+    <Suspense fallback={<div className="p-4 text-gray-500">読み込み中...</div>}>
+      <MenuStaffMatrixContent />
+    </Suspense>
   )
 }

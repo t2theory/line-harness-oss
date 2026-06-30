@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import type { Tag } from '@line-crm/shared'
 import { api, type ApiBroadcast, type BroadcastInsight } from '@/lib/api'
@@ -50,7 +50,7 @@ function formatDatetime(iso: string | null): string {
   })
 }
 
-export default function BroadcastsPage() {
+function BroadcastsPageContent() {
   const searchParams = useSearchParams()
   const detailId = searchParams.get('id')
 
@@ -60,6 +60,14 @@ export default function BroadcastsPage() {
   }
 
   return <BroadcastList />
+}
+
+export default function BroadcastsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-gray-500">読み込み中...</div>}>
+      <BroadcastsPageContent />
+    </Suspense>
+  )
 }
 
 type BroadcastTab = 'single' | 'dedup' | 'all'

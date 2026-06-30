@@ -161,8 +161,8 @@ async function resolveFriendId(
 async function notifyForBooking(
   db: D1Database,
   bookingId: string,
-  kind: 'requested' | 'approved' | 'rejected',
-  env?: Env,
+  kind: 'requested' | 'approved' | 'rejected' | 'cancelled',
+  env?: Env['Bindings'],
 ): Promise<void> {
   const row = await db
     .prepare(
@@ -517,6 +517,68 @@ booking.get('/api/liff/booking/me', async (c) => {
     .all();
 
   return c.json({ upcoming: upcoming.results, past: past.results });
+});
+
+booking.post('/api/liff/booking/me/:id/cancel', async (c) => {
+  const accountId = await resolveAccountIdFromLiff(c);
+  if (!accountId) return c.json({ error: 'unknown_liff' }, 404);
+  const callerLineUserId = await verifyCallerLineUserId(c);
+  if (!callerLineUserId) return c.json({ error: 'unauthorized' }, 401);
+  const friendId = await resolveFriendId(c, callerLineUserId, accountId);
+  if (!friendId) return c.json({ error: 'unauthorized' }, 401);
+
+  const id = c.req.param('id');
+  const row = await c.env.DB
+    .prepare(
+      `SELECT id, status, starts_at
+         FROM bookings
+        WHERE id = ? AND line_account_id = ? AND friend_id = ?`,
+    )
+    .bind(id, accountId, friendId)
+    .first<{ id: string; status: BookingStatus; starts_at: string }>();
+
+  if (!row) return c.json({ error: 'not_found' }, 404);
+
+  if (row.status !== 'requested' && row.status !== 'confirmed') {
+    return c.json({ error: 'cannot_cancel' }, 409);
+  }
+
+  const startsAt = new Date(row.starts_at);
+  if (startsAt <= new Date()) {
+    return c.json({ error: 'already_started' }, 409);
+  }
+
+  const updateResult = await c.env.DB
+    .prepare(
+      `UPDATE bookings SET status = 'cancelled', decided_at = ?,
+                            updated_at = strftime('%Y-%m-%dT%H:%M:%f', 'now', '+9 hours')
+        WHERE id = ? AND status = ?`,
+    )
+    .bind(new Date().toISOString(), id, row.status)
+    .run();
+
+  if ((updateResult.meta?.changes ?? 0) === 0) {
+    return c.json({ error: 'concurrent_update' }, 409);
+  }
+
+  await c.env.DB
+    .prepare(`UPDATE booking_reminders SET status='cancelled' WHERE booking_id = ? AND status = 'pending'`)
+    .bind(id)
+    .run();
+
+  c.executionCtx.waitUntil(
+    deleteGoogleCalendarEventForBooking(c.env.DB, c.env, id).catch((err) =>
+      console.error('booking google calendar delete failed:', err),
+    ),
+  );
+
+  c.executionCtx.waitUntil(
+    notifyForBooking(c.env.DB, id, 'cancelled', c.env).catch((err) =>
+      console.error('booking notify (cancelled) failed:', err),
+    ),
+  );
+
+  return c.json({ ok: true });
 });
 
 // ================================================================

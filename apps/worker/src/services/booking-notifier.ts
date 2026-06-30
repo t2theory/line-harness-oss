@@ -7,6 +7,7 @@ export type NotificationKind =
   | 'approved'
   | 'rejected'
   | 'expired'
+  | 'cancelled'
   | 'day_before'
   | 'hours_before';
 
@@ -39,6 +40,8 @@ export function renderNotificationText(
       return `申し訳ありません、ご希望の枠でお取りできませんでした。\n別の日時で再度お試しください。`;
     case 'expired':
       return `予約リクエストが 24 時間返信がなかったため、期限切れになりました。${detail}`;
+    case 'cancelled':
+      return `ご予約をキャンセルしました。${detail}\n\nまたのご予約をお待ちしております。`;
     case 'day_before':
       return `明日のご予約のお知らせです。${detail}`;
     case 'hours_before':

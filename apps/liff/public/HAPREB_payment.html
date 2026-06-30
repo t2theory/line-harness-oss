@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>未来設計セッション｜さとみももか</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JRKMLLMZT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-3JRKMLLMZT');
+</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: sans-serif;
+  color: #1a1a1a;
+  background: #fff;
+  max-width: 440px;
+  margin: 0 auto;
+  line-height: 2;
+}
+
+.hero {
+  background: linear-gradient(160deg, #fff0f2 0%, #fff8f0 100%);
+  padding: 36px 24px 32px;
+  text-align: center;
+}
+.label {
+  display: inline-block;
+  background: #f09199;
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 14px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+.hero h1 {
+  font-size: 26px;
+  font-weight: bold;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.hero-catch {
+  font-size: 16px;
+  color: #c07880;
+  font-weight: normal;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.hero-sub {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.9;
+}
+
+.content {
+  padding: 28px 20px 60px;
+}
+
+.quote-block {
+  background: #fff8f9;
+  border-left: 3px solid #f09199;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  font-size: 15px;
+  color: #555;
+  line-height: 2;
+}
+
+.lead {
+  font-size: 15px;
+  margin-bottom: 24px;
+  line-height: 2;
+  text-align: center;
+}
+
+.price-box {
+  background: linear-gradient(135deg, #fff0f2 0%, #fff8f5 100%);
+  border: 0.5px solid #f5c5ca;
+  border-radius: 12px;
+  padding: 24px 20px;
+  margin: 24px 0;
+  text-align: center;
+}
+.price-regular {
+  font-size: 13px;
+  color: #aaa;
+  text-decoration: line-through;
+}
+.price-monitor {
+  font-size: 36px;
+  font-weight: bold;
+  color: #f09199;
+  margin: 6px 0;
+}
+.price-note {
+  font-size: 12px;
+  color: #999;
+}
+
+.highlight-box {
+  background: linear-gradient(135deg, #fffbf0 0%, #fff3f5 100%);
+  border: 1px solid #f5c5ca;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 24px 0;
+}
+.highlight-badge {
+  display: inline-block;
+  background: #f09199;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+.highlight-title {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.highlight-body {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.9;
+}
+
+.section {
+  border: 0.5px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #f09199;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+.check-list {
+  list-style: none;
+  font-size: 14px;
+}
+.check-list li {
+  padding: 5px 0 5px 20px;
+  position: relative;
+  line-height: 1.7;
+}
+.check-list li::before {
+  content: "✓";
+  color: #f09199;
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
+.flow {
+  margin: 28px 0;
+}
+.flow-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #f09199;
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+.flow-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.flow-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: #f09199;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 3px;
+}
+.flow-text {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.flow-text strong {
+  display: block;
+  font-size: 14px;
+}
+.flow-arrow {
+  color: #f09199;
+  font-size: 18px;
+  margin: 4px 0 4px 7px;
+  line-height: 1;
+}
+
+.info {
+  font-size: 13px;
+  color: #666;
+  line-height: 2.2;
+  margin: 24px 0;
+  padding: 16px 20px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.divider {
+  border: none;
+  border-top: 0.5px solid #e5e5e5;
+  margin: 28px 0;
+}
+
+.btn {
+  display: block;
+  background: #f09199;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  border-radius: 40px;
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 16px rgba(240, 145, 153, 0.4);
+  margin-top: 32px;
+}
+.step-note {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  margin-top: 16px;
+  line-height: 1.9;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="label">期間限定モニター受付中</span>
+  <h1>未来設計セッション</h1>
+  <p class="hero-catch">ももかと一緒に整理する60分</p>
+  <p class="hero-sub">まとまっていなくても、答えが出ていなくても。<br>そのままのあなたで大丈夫🌿</p>
+</div>
+
+<div class="content">
+
+  <div class="quote-block">
+    「何から話せばいいかわからない」<br>
+    「話がまとまっていない」<br>
+    「ただ、聞いてほしいだけ」
+  </div>
+
+  <p class="lead">もし、そう感じているのなら、<br>
+  それをそのまま聞かせてください。<br>
+  具体的なお話も、勿論お聞きします。<br>
+  一緒に少しずつ、整理していきましょう。</p>
+
+  <div class="price-box">
+    <div class="price-regular">通常価格 ¥4,980</div>
+    <div class="price-monitor">¥1,980</div>
+    <div class="price-note">期間限定モニター価格・60分・Zoom</div>
+  </div>
+
+  <div class="highlight-box">
+    <span class="highlight-badge">セッション後のお届け物</span>
+    <div class="highlight-title">🗺️ あなた専用の<br>「未来設計ロードマップ」をプレゼント</div>
+    <div class="highlight-body">
+      セッションでお聞きした内容をもとに、<br>
+      「あなただけのロードマップ」を作成。<br>
+      後日LINEでお届けします。<br><br>
+      「これからどう動けばいいか」が<br>
+      1枚でわかる、あなただけの地図です🌿
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">セッションでできること</div>
+    <ul class="check-list">
+      <li>今の状況を言葉にして整理する</li>
+      <li>「私が悪いのか」という混乱を解き解す</li>
+      <li>動けない理由を、一つひとつ確認する</li>
+      <li>これからの選択肢を一緒に見つける</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">こんな方へ</div>
+    <ul class="check-list">
+      <li>一人で考え続けて、疲れてしまった</li>
+      <li>誰かに話を聞いてもらいたい</li>
+      <li>どうしたらいいか、少しだけ整理したい</li>
+      <li>今すぐ決めなくていい、でも動きたい</li>
+    </ul>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title">セッションの流れ</div>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-text">
+        <strong>お支払い（¥1,980）</strong>
+        クレジットカード・Google Pay
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-text">
+        <strong>日程確定</strong>
+        LINEで予約カレンダーをお送りします
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-text">
+        <strong>60分 Zoom セッション</strong>
+        ご自宅など、落ち着ける場所からどうぞ
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-text">
+        <strong>ロードマップをLINEでお届け</strong>
+        あなただけの未来の地図をお送りします🌿
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="info">
+    🗓️ 月5名様限定<br>
+    💻 Zoomで60分<br>
+    🔒 秘密厳守・ニックネームOK<br>
+    💳 クレジットカード・Google Pay<br>
+    　　※弊社では決済情報非保持です。<br>
+    🏠 ご自宅など、落ち着ける場所からどうぞ
+  </div>
+
+<a href="https://square.link/u/metWF8Wp" class="btn" id="main-btn">
+  お支払いへ進む →
+</a>
+
+<p class="step-note" id="btn-note">
+  決済後、LINEへ予約カレンダーをお送りします。<br>
+  カレンダーでご希望の日時をお選びください📌<br>
+  ご希望の日時がない場合は<br>
+  トークルームへお気軽にご相談ください😊
+</p>
+
+</div>
+<script>
+function getParam(name) {
+  var results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
+  return results ? results[1] : null;
+}
+var uid = getParam('uid');
+var lh = getParam('lh');
+if (uid || lh) {
+  var btn = document.getElementById('main-btn');
+  // L-Harness環境（Cloudflare Pages上のLIFF）にホストされている前提。
+  // liff.line.meの絶対パスを指定するとAndroidでintentエラーになるため、
+  // 相対パスに明示的なliffIdを付与してReactアプリ側で認識できるようにします。
+  btn.href = '/booking?liffId=2010454210-ewqCZNtD';
+  btn.textContent = '日程を選んで申し込む →';
+  var note = document.getElementById('btn-note');
+  note.innerHTML = '予約画面へ移動し、ご希望の日時をお選びください📌<br>ご希望の日時がない場合はトークルームへお気軽にどうぞ😊';
+}
+</script>
+</body>
+</html>

@@ -292,6 +292,12 @@ app.get('/r/:ref', async (c) => {
   const isMobile = /iphone|ipad|android|mobile/.test(ua);
   const isIOS = /iphone|ipad|ipod/.test(ua);
   const isAndroid = /android/.test(ua);
+  const isLine = /line\//.test(ua);
+
+  // If already inside the LINE app browser, no need for intents or intermediate pages.
+  if (isLine) {
+    return c.redirect(liffTarget);
+  }
 
   if (isMobile) {
     // OS-aware mobile UI. Per-browser detection (X / IG / FB) intentionally avoided —

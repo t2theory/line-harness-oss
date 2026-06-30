@@ -9,8 +9,23 @@ export default function BookingHistory() {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
 
   useEffect(() => {
-    api.me().then(setData);
+    fetchData();
   }, []);
+
+  const fetchData = () => {
+    api.me().then(setData);
+  };
+
+  const handleCancel = async (id: string) => {
+    if (!confirm('ご予約をキャンセルしますか？')) return;
+    try {
+      await api.cancelMyBooking(id);
+      alert('キャンセルしました。');
+      fetchData();
+    } catch (e: any) {
+      alert(`キャンセルに失敗しました: ${e.body?.error || e.message}`);
+    }
+  };
 
   if (!data) return <div className="p-4 text-gray-500">読み込み中...</div>;
   const list = tab === 'upcoming' ? data.upcoming : data.past;
@@ -36,12 +51,12 @@ export default function BookingHistory() {
       ) : (
         <ul className="space-y-2">
           {list.map((b) => (
-            <HistoryCard key={b.id} booking={b} />
+            <HistoryCard key={b.id} booking={b} onCancel={handleCancel} />
           ))}
         </ul>
       )}
       <p className="text-xs text-gray-500 pt-4">
-        変更・キャンセルはお店に LINE で直接ご連絡ください。
+        ※ 内容の変更はお店に直接ご連絡ください。キャンセルは上記より可能です。
       </p>
     </div>
   );

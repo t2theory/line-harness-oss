@@ -35,6 +35,12 @@ describe('renderNotificationText', () => {
   test('期限切れ', () => {
     expect(renderNotificationText('expired', ctx)).toContain('期限切れ');
   });
+  test('\u30ad\u30e3\u30f3\u30bb\u30eb', () => {
+    const text = renderNotificationText('cancelled', ctx);
+    expect(text).toContain('\u3054\u4e88\u7d04\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f');
+    expect(text).toContain('\u307e\u305f\u306e\u3054\u4e88\u7d04\u3092\u304a\u5f85\u3061\u3057\u3066\u304a\u308a\u307e\u3059');
+    expect(text).toContain('2026-05-10 14:00');
+  });
   test('前日リマインダ', () => {
     expect(renderNotificationText('day_before', ctx)).toContain('明日のご予約');
   });

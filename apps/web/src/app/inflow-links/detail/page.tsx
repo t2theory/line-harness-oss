@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import Header from '@/components/layout/header'
 import type { EntryRoute, EntryRouteFunnel } from '@line-crm/shared'
 
-export default function InflowLinkDetailPage() {
+function InflowLinkDetailPageContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id') ?? ''
   const [route, setRoute] = useState<EntryRoute | null>(null)
@@ -110,5 +110,13 @@ function FunnelView({ funnel }: { funnel: EntryRouteFunnel }) {
         })}
       </div>
     </div>
+  )
+}
+
+export default function InflowLinkDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-gray-500">読み込み中…</div>}>
+      <InflowLinkDetailPageContent />
+    </Suspense>
   )
 }

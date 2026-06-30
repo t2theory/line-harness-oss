@@ -11,7 +11,13 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   no_show: { label: '無断キャンセル', color: 'bg-red-100 text-red-800' },
 };
 
-export default function HistoryCard({ booking }: { booking: BookingHistoryItem }) {
+export default function HistoryCard({
+  booking,
+  onCancel
+}: {
+  booking: BookingHistoryItem;
+  onCancel?: (id: string) => void;
+}) {
   const meta = STATUS_LABEL[booking.status] ?? { label: booking.status, color: 'bg-gray-100' };
   return (
     <li className="border rounded p-3 flex gap-3 items-start">
@@ -29,7 +35,17 @@ export default function HistoryCard({ booking }: { booking: BookingHistoryItem }
         <div className="text-sm text-gray-600">{booking.staff_name}</div>
         <div className="text-sm text-gray-600">{utcToJstDisplay(booking.starts_at)}</div>
       </div>
-      <span className={`text-xs px-2 py-1 rounded h-fit ${meta.color}`}>{meta.label}</span>
+      <div className="flex flex-col items-end gap-2">
+        <span className={`text-xs px-2 py-1 rounded h-fit ${meta.color}`}>{meta.label}</span>
+        {onCancel && (booking.status === 'requested' || booking.status === 'confirmed') && new Date(booking.starts_at) > new Date() && (
+          <button
+            onClick={() => onCancel(booking.id)}
+            className="text-xs text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded px-2 py-1 mt-1"
+          >
+            キャンセルする
+          </button>
+        )}
+      </div>
     </li>
   );
 }

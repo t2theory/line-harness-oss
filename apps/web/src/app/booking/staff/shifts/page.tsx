@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/header'
 import { bookingApi, type BookingShift, type BookingStaff } from '@/lib/api'
@@ -27,7 +27,7 @@ const DEFAULT_TEMPLATE: Record<DayKey, { start: string; end: string } | null> = 
   sat: { start: '10:00', end: '19:00' },
 }
 
-export default function StaffShiftsPage() {
+function StaffShiftsPageContent() {
   const sp = useSearchParams()
   const id = sp.get('staff_id') ?? ''
   const { selectedAccountId } = useAccount()
@@ -264,5 +264,13 @@ export default function StaffShiftsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function StaffShiftsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-gray-500">読み込み中...</div>}>
+      <StaffShiftsPageContent />
+    </Suspense>
   )
 }
