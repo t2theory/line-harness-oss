@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, type BookingHistoryItem } from '../lib/api.js';
 import HistoryCard from '../components/HistoryCard.js';
 
@@ -7,6 +8,7 @@ export default function BookingHistory() {
     null,
   );
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -25,6 +27,10 @@ export default function BookingHistory() {
     } catch (e: any) {
       alert(`キャンセルに失敗しました: ${e.body?.error || e.message}`);
     }
+  };
+
+  const handleRebook = (menuId: string, staffId: string) => {
+    navigate(`/booking?menuId=${menuId}&staffId=${staffId}`);
   };
 
   if (!data) return <div className="p-4 text-gray-500">読み込み中...</div>;
@@ -51,7 +57,7 @@ export default function BookingHistory() {
       ) : (
         <ul className="space-y-2">
           {list.map((b) => (
-            <HistoryCard key={b.id} booking={b} onCancel={handleCancel} />
+            <HistoryCard key={b.id} booking={b} onCancel={handleCancel} onRebook={handleRebook} />
           ))}
         </ul>
       )}

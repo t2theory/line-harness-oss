@@ -37,6 +37,8 @@ export interface BookingHistoryItem {
   starts_at: string;
   status: string;
   customer_note?: string | null;
+  menu_id: string;
+  staff_id: string;
   menu_name: string;
   staff_name: string;
   profile_image_url: string | null;
@@ -155,4 +157,10 @@ export const api = {
     get<{ items: EventBookingMine[] }>(`/api/liff/events/me?tab=${tab}`),
   cancelMyEventBooking: (bookingId: string) =>
     post<{ ok: true }>(`/api/liff/events/me/${bookingId}/cancel`, {}),
+  
+  resetSession: async () => {
+    const liff = (await import('@line/liff')).default;
+    liff.logout();
+    window.location.reload();
+  },
 };

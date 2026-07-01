@@ -487,6 +487,7 @@ booking.get('/api/liff/booking/me', async (c) => {
   const upcoming = await c.env.DB
     .prepare(
       `SELECT b.id, b.starts_at, b.status, b.customer_note,
+              b.menu_id, b.staff_id,
               m.name AS menu_name,
               s.display_name AS staff_name, s.profile_image_url
          FROM bookings b
@@ -503,6 +504,7 @@ booking.get('/api/liff/booking/me', async (c) => {
   const past = await c.env.DB
     .prepare(
       `SELECT b.id, b.starts_at, b.status,
+              b.menu_id, b.staff_id,
               m.name AS menu_name,
               s.display_name AS staff_name, s.profile_image_url
          FROM bookings b
@@ -952,7 +954,7 @@ booking.post('/api/booking/admin/staff/:id/shifts/generate', async (c) => {
     weeks: number;
     weekly_template: Record<
       'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat',
-      { start: string; end: string } | null
+      Array<{ start: string; end: string }> | null
     >;
   }>();
   if (!b.from_date || !b.weeks || !b.weekly_template) {
@@ -960,22 +962,51 @@ booking.post('/api/booking/admin/staff/:id/shifts/generate', async (c) => {
   }
   const dayKeys: Array<keyof typeof b.weekly_template> = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   const start = new Date(`${b.from_date}T00:00:00Z`);
+
+  // 1. 生成対象の全日付を算出
+  const targetDates: string[] = [];
+  for (let i = 0; i < b.weeks * 7; i++) {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    const dayStr = dayKeys[d.getUTCDay()];
+    const tplArr = b.weekly_template[dayStr];
+    if (tplArr && tplArr.length > 0) {
+      targetDates.push(d.toISOString().slice(0, 10));
+    }
+  }
+  if (targetDates.length === 0) return c.json({ inserted: 0 });
+
+  // 2. 既にシフトが1つでも存在する日付は生成対象から除外（スキップ）する
+  const placeholders = targetDates.map(() => '?').join(',');
+  const existingRows = await c.env.DB.prepare(
+    `SELECT DISTINCT work_date FROM staff_shifts WHERE staff_id = ? AND work_date IN (${placeholders})`
+  ).bind(staffId, ...targetDates).all<{ work_date: string }>();
+  
+  const skipDates = new Set(existingRows.results.map(r => r.work_date));
+
   const stmts: D1PreparedStatement[] = [];
   for (let i = 0; i < b.weeks * 7; i++) {
     const d = new Date(start);
     d.setUTCDate(start.getUTCDate() + i);
-    const tpl = b.weekly_template[dayKeys[d.getUTCDay()]];
-    if (!tpl) continue;
-    stmts.push(
-      c.env.DB
-        .prepare(
-          `INSERT INTO staff_shifts (id, staff_id, work_date, start_time, end_time)
-           VALUES (?, ?, ?, ?, ?)
-           ON CONFLICT(staff_id, work_date) DO NOTHING`,
-        )
-        .bind(crypto.randomUUID(), staffId, d.toISOString().slice(0, 10), tpl.start, tpl.end),
-    );
+    const dateStr = d.toISOString().slice(0, 10);
+    
+    if (skipDates.has(dateStr)) continue; // すでにシフトがあるのでスキップ
+
+    const tplArr = b.weekly_template[dayKeys[d.getUTCDay()]];
+    if (!tplArr) continue;
+
+    for (const tpl of tplArr) {
+      stmts.push(
+        c.env.DB
+          .prepare(
+            `INSERT INTO staff_shifts (id, staff_id, work_date, start_time, end_time)
+             VALUES (?, ?, ?, ?, ?)`
+          )
+          .bind(crypto.randomUUID(), staffId, dateStr, tpl.start, tpl.end),
+      );
+    }
   }
+
   if (stmts.length === 0) return c.json({ inserted: 0 });
   await c.env.DB.batch(stmts);
   return c.json({ inserted: stmts.length });
@@ -1015,6 +1046,49 @@ booking.get('/api/booking/admin/requests', async (c) => {
     ? (status === 'all' ? stmt.bind(accountId) : stmt.bind(accountId, 'requested'))
     : stmt.bind(accountId, status)).all();
   return c.json({ requests: rows.results });
+});
+
+booking.get('/api/booking/admin/staff/:id/bookings', async (c) => {
+  const accountId = await resolveAccountIdAdmin(c);
+  if (!accountId) return c.json({ error: 'missing_account_id' }, 400);
+  const staffId = c.req.param('id');
+  const from = c.req.query('from');
+  const to = c.req.query('to');
+  
+  if (!from || !to) {
+    return c.json({ error: 'missing_params' }, 400);
+  }
+
+  const rows = await c.env.DB.prepare(
+    `SELECT b.*, m.name AS menu_name, f.display_name AS friend_name
+       FROM bookings b
+       INNER JOIN menus m ON m.id = b.menu_id
+       LEFT JOIN friends f ON f.id = b.friend_id
+      WHERE b.line_account_id = ? AND b.staff_id = ?
+        AND b.status IN ('requested', 'confirmed')
+        AND b.starts_at >= ? AND b.starts_at < ?
+      ORDER BY b.starts_at ASC`
+  ).bind(accountId, staffId, `${from}T00:00:00Z`, `${to}T23:59:59Z`).all();
+
+  return c.json({ bookings: rows.results });
+});
+
+booking.delete('/api/booking/admin/requests/:id', async (c) => {
+  const accountId = await resolveAccountIdAdmin(c);
+  if (!accountId) return c.json({ error: 'missing_account_id' }, 400);
+  const id = c.req.param('id');
+  
+  const row = await c.env.DB
+    .prepare(`SELECT id FROM bookings WHERE id = ? AND line_account_id = ?`)
+    .bind(id, accountId)
+    .first<{ id: string }>();
+  if (!row) return c.json({ error: 'not_found' }, 404);
+
+  // 物理削除
+  await c.env.DB.prepare(`DELETE FROM booking_reminders WHERE booking_id = ?`).bind(id).run();
+  await c.env.DB.prepare(`DELETE FROM bookings WHERE id = ?`).bind(id).run();
+
+  return c.json({ ok: true });
 });
 
 booking.patch('/api/booking/admin/requests/:id', async (c) => {

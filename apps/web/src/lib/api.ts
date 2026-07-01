@@ -1391,7 +1391,7 @@ export const bookingApi = {
     body: {
       from_date: string;
       weeks: number;
-      weekly_template: Record<string, { start: string; end: string } | null>;
+      weekly_template: Record<string, Array<{ start: string; end: string }> | null>;
     },
   ) =>
     fetchApi<{ inserted: number }>(
@@ -1411,6 +1411,14 @@ export const bookingApi = {
     fetchApi<{ status: string }>(
       withAccount(`/api/booking/admin/requests/${id}`, accountId),
       { method: 'PATCH', body: JSON.stringify({ action }) },
+    ),
+  deleteRequest: (accountId: string, id: string) =>
+    fetchApi<{ ok: true }>(withAccount(`/api/booking/admin/requests/${id}`, accountId), {
+      method: 'DELETE',
+    }),
+  getBookings: (accountId: string, staffId: string, from: string, to: string) =>
+    fetchApi<{ bookings: BookingRequest[] }>(
+      withAccount(`/api/booking/admin/staff/${staffId}/bookings?from=${from}&to=${to}`, accountId),
     ),
   pendingCount: (accountId: string) =>
     fetchApi<{ count: number }>(withAccount('/api/booking/admin/pending-count', accountId)),

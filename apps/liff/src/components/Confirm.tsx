@@ -21,6 +21,10 @@ export default function Confirm({
   const [idemKey] = useState(() => crypto.randomUUID());
 
   async function handleSubmit() {
+    if (!note.trim()) {
+      setError('今の状況をご入力ください。');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -29,7 +33,7 @@ export default function Confirm({
           menu_id: menu.id,
           staff_id: staff.id,
           starts_at: jstStartsAtIso(slot.date, slot.start),
-          customer_note: note || undefined,
+          customer_note: note,
         },
         idemKey,
       );
@@ -38,8 +42,16 @@ export default function Confirm({
       const err = e as { status?: number; body?: { error?: string } };
       if (err.status === 409 && err.body?.error === 'slot_conflict') {
         setError('この時間枠は他の方の予約と重なりました。日時を選び直してください。');
+      } else if (err.status === 422 && err.body?.error === 'slot_not_available') {
+        setError('この時間枠はすでに予約済み（またはあなた自身の仮予約済み）です。別の日時を選んでください。');
+      } else if (err.status === 422 && err.body?.error === 'lead_time_violation') {
+        setError('予約の受付期限を過ぎています。別の日時を選んでください。');
+      } else if (err.status === 422 && err.body?.error === 'out_of_shift') {
+        setError('営業時間外の予約です。別の日時を選んでください。');
+      } else if (err.status === 401) {
+        setError('認証の有効期限が切れました。お手数ですが、一度LINEのトーク画面に戻り、再度リンクを開き直してください。');
       } else {
-        setError('予約リクエストの送信に失敗しました。時間をおいて再度お試しください。');
+        setError(`予約リクエストの送信に失敗しました（${err.body?.error || err.status || '不明なエラー'}）。時間をおいて再度お試しください。`);
       }
     } finally {
       setSubmitting(false);
@@ -58,16 +70,29 @@ export default function Confirm({
         <Row label="料金（目安）" value={`¥${staff.price.toLocaleString()}`} />
       </dl>
       <label className="block">
-        <span className="text-sm text-gray-700">ご要望（任意）</span>
+        <span className="text-sm text-gray-700 font-medium">今の状況を教えてください <span className="text-red-500">*</span></span>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className="mt-1 w-full border rounded p-2 text-sm"
-          rows={3}
-          placeholder="髪型の希望、アレルギー、その他"
+          rows={4}
+          placeholder="夫との関係や、今困っていることを自由に書いてください"
+          required
         />
       </label>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && (
+        <div className="space-y-2">
+          <p className="text-red-600 text-sm">{error}</p>
+          {error.includes('有効期限') && (
+            <button
+              onClick={() => api.resetSession()}
+              className="text-sm bg-gray-200 text-gray-800 px-4 py-2 rounded font-medium"
+            >
+              セッションをリセットして再読み込み
+            </button>
+          )}
+        </div>
+      )}
       <button
         onClick={handleSubmit}
         disabled={submitting}

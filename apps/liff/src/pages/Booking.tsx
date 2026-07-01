@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MenuList from '../components/MenuList.js';
 import StaffList from '../components/StaffList.js';
 import DateTimePicker from '../components/DateTimePicker.js';
 import Confirm from '../components/Confirm.js';
 import Done from '../components/Done.js';
-import type { MenuItem, StaffItem } from '../lib/api.js';
+import { api, type MenuItem, type StaffItem } from '../lib/api.js';
 
 type Step = 'menu' | 'staff' | 'datetime' | 'confirm' | 'done';
 
@@ -18,6 +18,32 @@ export default function Booking() {
   const [menu, setMenu] = useState<MenuItem | null>(null);
   const [staff, setStaff] = useState<StaffItem | null>(null);
   const [slot, setSlot] = useState<{ date: string; start: string } | null>(null);
+
+  useEffect(() => {
+    const preMenuId = params.get('menuId');
+    const preStaffId = params.get('staffId');
+    if (preMenuId) {
+      api.menus().then(res => {
+        const m = res.menus.find(x => x.id === preMenuId);
+        if (m) {
+          setMenu(m);
+          if (preStaffId) {
+            api.staffOf(preMenuId).then(staffRes => {
+              const s = staffRes.staff.find(x => x.id === preStaffId);
+              if (s) {
+                setStaff(s);
+                setStep('datetime');
+              } else {
+                setStep('staff');
+              }
+            });
+          } else {
+            setStep('staff');
+          }
+        }
+      });
+    }
+  }, []);
 
   function exitPeekToBooking() {
     // peek モードを抜けて通常フローへ。同じ menu/staff/slot を持ち回したまま step を進める。

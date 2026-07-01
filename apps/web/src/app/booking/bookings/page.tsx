@@ -81,11 +81,15 @@ export default function BookingsPage() {
     load()
   }, [load])
 
-  async function handleDecide(id: string, action: 'approve' | 'reject' | 'cancel' | 'no_show' | 'complete') {
+  async function handleDecide(id: string, action: 'approve' | 'reject' | 'cancel' | 'no_show' | 'complete' | 'delete') {
     if (!selectedAccountId) return
-    if (!confirm(`この予約を「${actionLabel[action]}」しますか？`)) return
+    if (!confirm(`この予約を「${action === 'delete' ? '削除' : actionLabel[action]}」しますか？`)) return
     try {
-      await bookingApi.decideRequest(selectedAccountId, id, action)
+      if (action === 'delete') {
+        await bookingApi.deleteRequest(selectedAccountId, id)
+      } else {
+        await bookingApi.decideRequest(selectedAccountId, id, action)
+      }
       await load()
     } catch (e) {
       alert(`操作に失敗しました: ${e instanceof Error ? e.message : String(e)}`)
@@ -183,7 +187,7 @@ function ActionButtons({
   onAction,
 }: {
   status: string
-  onAction: (a: 'approve' | 'reject' | 'cancel' | 'no_show' | 'complete') => void
+  onAction: (a: 'approve' | 'reject' | 'cancel' | 'no_show' | 'complete' | 'delete') => void
 }) {
   if (status === 'requested') {
     return (
@@ -228,5 +232,14 @@ function ActionButtons({
       </div>
     )
   }
-  return <span className="text-xs text-gray-400">-</span>
+  return (
+    <div className="inline-flex gap-1">
+      <button
+        onClick={() => onAction('delete')}
+        className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors border border-transparent hover:border-red-200"
+      >
+        削除
+      </button>
+    </div>
+  )
 }

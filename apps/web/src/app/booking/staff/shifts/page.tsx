@@ -17,14 +17,14 @@ const DAYS: Array<{ key: DayKey; label: string; tone: string }> = [
   { key: 'sat', label: '土', tone: 'text-blue-500' },
 ]
 
-const DEFAULT_TEMPLATE: Record<DayKey, { start: string; end: string } | null> = {
+const DEFAULT_TEMPLATE: Record<DayKey, Array<{ start: string; end: string }> | null> = {
   sun: null,
-  mon: { start: '10:00', end: '19:00' },
-  tue: { start: '10:00', end: '19:00' },
-  wed: { start: '10:00', end: '19:00' },
-  thu: { start: '10:00', end: '19:00' },
-  fri: { start: '10:00', end: '19:00' },
-  sat: { start: '10:00', end: '19:00' },
+  mon: [{ start: '10:00', end: '19:00' }],
+  tue: [{ start: '10:00', end: '19:00' }],
+  wed: [{ start: '10:00', end: '19:00' }],
+  thu: [{ start: '10:00', end: '19:00' }],
+  fri: [{ start: '10:00', end: '19:00' }],
+  sat: [{ start: '10:00', end: '19:00' }],
 }
 
 function StaffShiftsPageContent() {
@@ -150,39 +150,76 @@ function StaffShiftsPageContent() {
             </div>
             <div className="p-4 space-y-2">
               {DAYS.map((d) => {
-                const cur = tpl[d.key]
+                const curArr = tpl[d.key]
                 return (
-                  <div key={d.key} className="flex items-center gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={cur !== null}
-                      onChange={(e) =>
-                        setTpl({
-                          ...tpl,
-                          [d.key]: e.target.checked ? { start: '10:00', end: '19:00' } : null,
-                        })
-                      }
-                      className="w-4 h-4"
-                    />
-                    <span className={`w-6 font-medium ${d.tone}`}>{d.label}</span>
-                    {cur ? (
-                      <>
-                        <input
-                          type="time"
-                          value={cur.start}
-                          onChange={(e) => setTpl({ ...tpl, [d.key]: { ...cur, start: e.target.value } })}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                        <span className="text-gray-400">〜</span>
-                        <input
-                          type="time"
-                          value={cur.end}
-                          onChange={(e) => setTpl({ ...tpl, [d.key]: { ...cur, end: e.target.value } })}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </>
+                  <div key={d.key} className="flex items-start gap-3 text-sm py-1">
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <input
+                        type="checkbox"
+                        checked={curArr !== null}
+                        onChange={(e) =>
+                          setTpl({
+                            ...tpl,
+                            [d.key]: e.target.checked ? [{ start: '10:00', end: '19:00' }] : null,
+                          })
+                        }
+                        className="w-4 h-4"
+                      />
+                      <span className={`w-6 font-medium ${d.tone}`}>{d.label}</span>
+                    </div>
+                    {curArr ? (
+                      <div className="flex flex-col gap-2">
+                        {curArr.map((slot, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              type="time"
+                              value={slot.start}
+                              onChange={(e) => {
+                                const next = [...curArr]
+                                next[idx].start = e.target.value
+                                setTpl({ ...tpl, [d.key]: next })
+                              }}
+                              className="border border-gray-300 rounded-lg px-2 py-1 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500"
+                            />
+                            <span className="text-gray-400">〜</span>
+                            <input
+                              type="time"
+                              value={slot.end}
+                              onChange={(e) => {
+                                const next = [...curArr]
+                                next[idx].end = e.target.value
+                                setTpl({ ...tpl, [d.key]: next })
+                              }}
+                              className="border border-gray-300 rounded-lg px-2 py-1 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500"
+                            />
+                            {curArr.length > 1 && (
+                              <button
+                                onClick={() => {
+                                  const next = curArr.filter((_, i) => i !== idx)
+                                  setTpl({ ...tpl, [d.key]: next.length === 0 ? null : next })
+                                }}
+                                className="text-red-500 hover:bg-red-50 p-1 rounded-full text-xs ml-1"
+                                title="この枠を削除"
+                              >
+                                ✕
+                              </button>
+                            )}
+                            {idx === curArr.length - 1 && (
+                              <button
+                                onClick={() => {
+                                  const next = [...curArr, { start: '13:00', end: '19:00' }]
+                                  setTpl({ ...tpl, [d.key]: next })
+                                }}
+                                className="text-gray-500 hover:bg-gray-100 p-1 rounded-full text-xs ml-1 px-2 border border-gray-200 shadow-sm"
+                              >
+                                ＋枠を追加
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <span className="text-xs text-gray-400">休み</span>
+                      <span className="text-xs text-gray-400 mt-2">休み</span>
                     )}
                   </div>
                 )
@@ -223,7 +260,7 @@ function StaffShiftsPageContent() {
           {/* 登録済みシフト */}
           <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-sm font-semibold">登録済みシフト ({shifts.length} 日)</h2>
+              <h2 className="text-sm font-semibold">登録済みシフト ({new Set(shifts.map(s => s.work_date)).size} 日 / {shifts.length} 枠)</h2>
             </div>
             {loading ? (
               <div className="p-12 text-center text-sm text-gray-500">読み込み中…</div>

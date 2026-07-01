@@ -738,7 +738,6 @@ CREATE TABLE IF NOT EXISTS staff_shifts (
   end_time    TEXT NOT NULL,    -- HH:MM (JST)
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f', 'now', '+9 hours')),
   updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f', 'now', '+9 hours')),
-  UNIQUE (staff_id, work_date),
   FOREIGN KEY (staff_id) REFERENCES staff(id)
 );
 CREATE INDEX IF NOT EXISTS idx_shifts_staff_date ON staff_shifts (staff_id, work_date);
